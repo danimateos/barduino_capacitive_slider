@@ -7,12 +7,13 @@ uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
+uint32_t sampleIndex = 0;
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println("Recording baseline");
-  recordFromScratch(); // Shit readings; discard
+  recordFromScratch();  // Shit readings; discard
   delay(500);
   recordFromScratch();
 
@@ -23,7 +24,9 @@ void setup() {
 }
 
 void loop() {
-
+  readOne();
+  aggregateInto(averages);
+  printArray(averages, N_ELECTRODES);
   delay(50);
 }
 
@@ -44,13 +47,9 @@ void recordFromScratch() {
 void aggregateInto(uint32_t* out) {
   for (int e = 0; e < N_ELECTRODES; e++) {
     uint64_t partial = 0;
-
     for (int s = 0; s < N_SAMPLES; s++) {
       partial += sampleBuffer[e][s];
     }
-
-    Serial.println(partial);
-    Serial.println(partial / N_SAMPLES);
     out[e] = partial / N_SAMPLES;
   }
 }
@@ -61,4 +60,11 @@ void printArray(uint32_t* array, int len) {
     Serial.print(",");
   }
   Serial.println("");
+}
+
+void readOne() {
+  for (int e = 0; e < N_ELECTRODES; e++) {
+    sampleBuffer[e][sampleIndex % N_SAMPLES] = touchRead(PINS[e]);
+  }
+  sampleIndex++;
 }
