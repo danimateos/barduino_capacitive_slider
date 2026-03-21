@@ -2,35 +2,63 @@
 #define N_SAMPLES 10
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
-uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-uint32_t buffer[N_ELECTRODES][N_SAMPLES] = { 0 };
+uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
+uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("Recording baseline");
+  recordFromScratch(); // Shit readings; discard
+  delay(500);
+  recordFromScratch();
 
-  recordBaseline();
+  Serial.println("Aggregating baseline");
+  aggregateInto(baseline);
+
+  printArray(baseline, N_ELECTRODES);
 }
 
 void loop() {
-  for (int e = 0; e < N_ELECTRODES; e++) {
-    Serial.print(touchRead(PINS[e]));
-    Serial.print(",");
-  }
-  Serial.println("");
 
-
-  delay(10);
+  delay(50);
 }
 
-void recordBaseline() {
+void recordFromScratch() {
   for (int s = 0; s < N_SAMPLES; s++) {
     for (int e = 0; e < N_ELECTRODES; e++) {
-      buffer[e][s] = touchRead(PINS[e]);
+      int pin = PINS[e];
+      uint32_t reading = touchRead(pin);
+      // Serial.print("Reading pin ");
+      // Serial.print(pin);
+      // Serial.print(" for a value of ");
+      // Serial.println(reading);
+      // sampleBuffer[e][s] = reading;
     }
   }
 }
 
-void aggregate() {
-  for (int i = 0; i < sizeof(buffer) / sizeof(bufferx[0]); i++) {}
+void aggregateInto(uint32_t* out) {
+  for (int e = 0; e < N_ELECTRODES; e++) {
+    uint64_t partial = 0;
+
+    for (int s = 0; s < N_SAMPLES; s++) {
+      partial += sampleBuffer[e][s];
+    }
+
+    Serial.println(partial);
+    Serial.println(partial / N_SAMPLES);
+    out[e] = partial / N_SAMPLES;
+  }
+}
+
+void printArray(uint32_t* array, int len) {
+  for (int i = 0; i < len; i++) {
+    Serial.print(array[i]);
+    Serial.print(",");
+  }
+  Serial.println("");
 }
