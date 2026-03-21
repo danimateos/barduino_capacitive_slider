@@ -1,21 +1,23 @@
 #define N_ELECTRODES 8
 #define N_SAMPLES 10
+#define SAFE_SUB(a, b) ((a) >= (b) ? (a) - (b) : 0)
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
 
 uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t normalized[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 uint32_t sampleIndex = 0;
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+
+
   Serial.println("Recording baseline");
-  recordFromScratch();  // Shit readings; discard
-  delay(500);
   recordFromScratch();
+  waitUntilStable();
 
   Serial.println("Aggregating baseline");
   aggregateInto(baseline);
@@ -26,8 +28,9 @@ void setup() {
 void loop() {
   readOne();
   aggregateInto(averages);
-  printArray(averages, N_ELECTRODES);
-  delay(50);
+  subtract(normalized, averages, baseline);
+  printArray(normalized, N_ELECTRODES);
+  delay(10);
 }
 
 void recordFromScratch() {
@@ -67,4 +70,18 @@ void readOne() {
     sampleBuffer[e][sampleIndex % N_SAMPLES] = touchRead(PINS[e]);
   }
   sampleIndex++;
+}
+
+void subtract(uint32_t* out, uint32_t* averages, uint32_t* baseline) {
+
+  for (int e = 0; e < N_ELECTRODES; e++) {
+    
+    out[e] = SAFE_SUB(averages[e], baseline[e]);
+  }
+}
+
+void waitUntilStable() {
+  while (sampleIndex < 100) {
+    readOne();
+  }
 }
