@@ -1,6 +1,8 @@
 #define N_ELECTRODES 8
 #define N_SAMPLES 10
 #define WAIT_SAMPLES 500
+#define MIN_READS 300
+
 #define SAFE_SUB(a, b) ((a) >= (b) ? (a) - (b) : 0)
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
@@ -103,5 +105,5 @@ void updatePosition() {
     weighted += (e + 1) * (float)normalized[e];
   }
 
-  position = total < 100 ? 3.5 : (weighted / total) - 1;
+  position = total < MIN_READS ? 0.5 : ((weighted / total) - 1) / (N_ELECTRODES - 1);
 }
