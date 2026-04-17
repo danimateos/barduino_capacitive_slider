@@ -1,3 +1,5 @@
+#include <Adafruit_NeoPixel.h>
+
 #define N_ELECTRODES 8
 #define N_SAMPLES 10
 #define WAIT_SAMPLES 500
@@ -6,6 +8,9 @@
 #define SAFE_SUB(a, b) ((a) >= (b) ? (a) - (b) : 0)
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
+const int LED_PIN = 11;
+const int N_PIXELS = 8;
+int MAX_READING = 10000;  // used to calibrate the Neopixels' brightness
 
 uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -16,9 +21,11 @@ uint32_t sampleIndex = 0;
 
 float position = 0.0;
 
+Adafruit_NeoPixel strip(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
 void setup() {
   Serial.begin(115200);
-
+  strip.begin();
 
   Serial.println("Recording baseline");
   recordFromScratch();
@@ -34,9 +41,12 @@ void loop() {
   readOne();
   aggregateInto(averages);
   subtract(normalized, averages, baseline);
+
+  display1DArray(normalized, strip.Color(155, 0, 155));
   Serial.print(position);
   Serial.print(",");
   printArray(normalized, N_ELECTRODES);
+
   updatePosition();
   delay(10);
 }
@@ -106,4 +116,23 @@ void updatePosition() {
   }
 
   position = total < MIN_READS ? 0.5 : ((weighted / total) - 1) / (N_ELECTRODES - 1);
+}
+
+// Show the readings of the capacitive sensors as brightness values in the array
+// Assumes same number of electrodes and pixels
+void display1DArray(uint32_t* values, uint32_t color) {
+
+  int r = (color >> 16) & 0xFF;
+  int g = (color >> 8) & 0xFF;
+  int b = (color >> 0) & 0xFF;
+
+  
+
+  for (int i = 0; i < N_ELECTRODES; i++) {
+    float factor = (float)values[i] / MAX_READING;
+
+    strip.setPixelColor(i, strip.Color((uint8_t)(factor * r), (uint8_t)(factor * g), (uint8_t)(factor * b)));
+  }
+
+  strip.show();
 }
