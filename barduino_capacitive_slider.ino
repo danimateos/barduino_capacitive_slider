@@ -4,18 +4,20 @@
 #define N_SAMPLES 10
 #define WAIT_SAMPLES 500
 #define MIN_READS 300
+#define N_PIXELS 14
 
 #define SAFE_SUB(a, b) ((a) >= (b) ? (a) - (b) : 0)
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
 const int LED_PIN = 11;
-const int N_PIXELS = 8;
 int MAX_READING = 10000;  // used to calibrate the Neopixels' brightness
 
 uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t normalized[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+
 
 uint32_t sampleIndex = 0;
 
@@ -126,7 +128,7 @@ void display1DArray(uint32_t* values, uint32_t color) {
   int g = (color >> 8) & 0xFF;
   int b = (color >> 0) & 0xFF;
 
-  
+
 
   for (int i = 0; i < N_ELECTRODES; i++) {
     float factor = (float)values[i] / MAX_READING;
@@ -136,3 +138,20 @@ void display1DArray(uint32_t* values, uint32_t color) {
 
   strip.show();
 }
+
+
+void distributeOnto(const int from[], const float overlapFractions[][N_PIXELS], int out[], int sizeFrom, int sizeTo) {
+  // Clear
+  for (int p = 0; p < sizeTo; p++) {
+    out[p] = 0;
+  }
+
+  // Electrodes
+  for (int e = 0; e < sizeFrom; e++) {
+    // Pixels
+    for (int p = 0; p < sizeTo; p++) {
+      out[p] += (from[e] * overlapFractions[e][p]);
+    }
+  }
+}
+
