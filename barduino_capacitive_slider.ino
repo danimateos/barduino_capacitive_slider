@@ -16,7 +16,8 @@ uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t normalized[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
+float overlaps[N_ELECTRODES][N_PIXELS] = { 0 };
+float activations[N_PIXELS] = { 0 };
 
 
 uint32_t sampleIndex = 0;
@@ -29,9 +30,14 @@ void setup() {
   Serial.begin(115200);
   strip.begin();
 
+
+  Serial.println("Calculating the conversion factor from electrodes to pixels");
+  calculateOverlaps(overlaps);
+
   Serial.println("Recording baseline");
   recordFromScratch();
   waitUntilStable();
+
 
   Serial.println("Aggregating baseline");
   aggregateInto(baseline);
@@ -44,7 +50,9 @@ void loop() {
   aggregateInto(averages);
   subtract(normalized, averages, baseline);
 
-  display1DArray(normalized, strip.Color(155, 0, 155));
+  distributeOnto(normalized, activations, overlaps, N_ELECTRODES, N_PIXELS);
+
+  display1DArray(activations, strip.Color(155, 0, 155));
   Serial.print(position);
   Serial.print(",");
   printArray(normalized, N_ELECTRODES);
@@ -140,7 +148,7 @@ void display1DArray(uint32_t* values, uint32_t color) {
 }
 
 
-void distributeOnto(const int from[], const float overlapFractions[][N_PIXELS], int out[], int sizeFrom, int sizeTo) {
+void distributeOnto(const int from[], int out[], const float overlapFractions[][N_PIXELS], int sizeFrom, int sizeTo) {
   // Clear
   for (int p = 0; p < sizeTo; p++) {
     out[p] = 0;
