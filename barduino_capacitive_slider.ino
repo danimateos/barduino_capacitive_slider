@@ -155,3 +155,28 @@ void distributeOnto(const int from[], const float overlapFractions[][N_PIXELS], 
   }
 }
 
+// Calculate how much each electrode overlaps each pixel and store
+// the result in a [N_ELECTRODES, N_PIXELS] - sized array
+// Overlaps are expressed as fraction of the relevant electrode.
+void calculateOverlaps(float out[N_ELECTRODES][N_PIXELS]) {
+  float e_l, e_r, p_l, p_r, left, right, overlap;
+
+  // Electrodes
+  for (int e = 0; e < N_ELECTRODES; e++) {
+    e_l = (float)e / N_ELECTRODES;
+    e_r = (float)(e + 1) / N_ELECTRODES;
+
+    // Pixels
+    for (int p = 0; p < N_PIXELS; p++) {
+      p_l = (float)p / N_PIXELS;
+      p_r = (float)(p + 1) / N_PIXELS;
+
+      right = min(e_r, p_r);
+      left = max(e_l, p_l);
+
+      overlap = (right - left) * N_ELECTRODES;  // (right - left) / (1 / N_ELECTRODES)
+
+      out[e][p] = overlap >= 0.0 ? overlap : 0.0;
+    }
+  }
+}
