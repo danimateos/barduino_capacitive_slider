@@ -10,14 +10,14 @@
 
 unsigned int PINS[N_ELECTRODES] = { 1, 2, 4, 5, 6, 12, 13, 14 };
 const int LED_PIN = 11;
-int MAX_READING = 10000;  // used to calibrate the Neopixels' brightness
+int MAX_READING = 5000;  // used to calibrate the Neopixels' brightness
 
 uint32_t sampleBuffer[N_ELECTRODES][N_SAMPLES] = { 0 };
 uint32_t baseline[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t averages[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t normalized[N_ELECTRODES] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 float overlaps[N_ELECTRODES][N_PIXELS] = { 0 };
-float activations[N_PIXELS] = { 0 };
+uint32_t activations[N_PIXELS] = { 0 };
 
 
 uint32_t sampleIndex = 0;
@@ -138,7 +138,7 @@ void display1DArray(uint32_t* values, uint32_t color) {
 
 
 
-  for (int i = 0; i < N_ELECTRODES; i++) {
+  for (int i = 0; i < N_PIXELS; i++) {
     float factor = (float)values[i] / MAX_READING;
 
     strip.setPixelColor(i, strip.Color((uint8_t)(factor * r), (uint8_t)(factor * g), (uint8_t)(factor * b)));
@@ -148,7 +148,7 @@ void display1DArray(uint32_t* values, uint32_t color) {
 }
 
 
-void distributeOnto(const int from[], int out[], const float overlapFractions[][N_PIXELS], int sizeFrom, int sizeTo) {
+void distributeOnto(const uint32_t from[], uint32_t out[], const float overlapFractions[][N_PIXELS], int sizeFrom, int sizeTo) {
   // Clear
   for (int p = 0; p < sizeTo; p++) {
     out[p] = 0;
@@ -158,7 +158,7 @@ void distributeOnto(const int from[], int out[], const float overlapFractions[][
   for (int e = 0; e < sizeFrom; e++) {
     // Pixels
     for (int p = 0; p < sizeTo; p++) {
-      out[p] += (from[e] * overlapFractions[e][p]);
+      out[p] += (uint32_t)(from[e] * overlapFractions[e][p]);
     }
   }
 }
